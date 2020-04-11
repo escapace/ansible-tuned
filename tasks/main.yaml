@@ -1,0 +1,28 @@
+---
+- name: install tuned
+  package: name=tuned state=present
+
+- name: enable tuned
+  service: name=tuned state=started enabled=yes
+  when: not tuned_role_debug
+
+- name: generate tuned-main.conf file
+  template: src=tuned-main.conf.j2 dest=/etc/tuned/tuned-main.conf
+  notify: tuned restart
+
+- name: get tuned recommended profile
+  shell: tuned-adm recommend 2> /dev/null || echo -n " *fail"
+  register: tuned_recommend
+  when: tuned_profile == 'recommended'
+  changed_when: false
+
+- name: save tuned recommended profile
+  set_fact:
+    tuned_recommended_profile: "{{ (tuned_recommend.stdout == ' *fail') | ternary('default', tuned_recommend.stdout) }}"
+  when: tuned_profile == 'recommended'
+  changed_when: false
+
+- name: set tuned profile
+  command: tuned-adm profile {{ (tuned_profile == 'recommended') | ternary(tuned_recommended_profile, tuned_profile) }}
+  changed_when: false
+  when: not tuned_role_debug

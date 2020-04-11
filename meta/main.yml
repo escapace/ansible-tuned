@@ -1,0 +1,18 @@
+---
+dependencies: []
+
+galaxy_info:
+  description: Tuning Profile Delivery Mechanism for Linux
+  issue_tracker_url: https://github.com/escapace/ansible-tuned/issues
+  license: Apache-2.0
+  author: Escapace
+  min_ansible_version: 2.9
+  github_branch: master
+  platforms:
+  - name: EL
+    versions:
+    - 8
+
+  galaxy_tags:
+  - escapace
+  - tuned
