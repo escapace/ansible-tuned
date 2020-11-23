@@ -7,7 +7,7 @@
   when: not tuned_role_debug
 
 - name: generate tuned-main.conf file
-  template: src=tuned-main.conf.j2 dest=/etc/tuned/tuned-main.conf
+  template: src=tuned-main.conf.j2 dest=/etc/tuned/tuned-main.conf owner=root group=root mode=0644
   notify: tuned restart
 
 - name: get tuned recommended profile
