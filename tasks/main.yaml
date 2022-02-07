@@ -2,6 +2,9 @@
 - name: install tuned
   package: name=tuned state=present
 
+- name: install atomic profile
+  package: name=tuned-profiles-atomic state=present
+
 - name: enable tuned
   service: name=tuned state=started enabled=yes
   when: not tuned_role_debug
