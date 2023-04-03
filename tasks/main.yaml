@@ -1,16 +1,28 @@
 ---
 - name: install tuned
-  ansible.builtin.package: name=tuned state=present
+  ansible.builtin.package:
+    name: tuned
+    state: present
 
 - name: install atomic profile
-  ansible.builtin.package: name=tuned-profiles-atomic state=present
+  ansible.builtin.package:
+    name: tuned-profiles-atomic
+    state: present
 
 - name: enable tuned
-  ansible.builtin.service: name=tuned state=started enabled=yes
+  ansible.builtin.service:
+    name: tuned
+    state: started
+    enabled: true
   when: not tuned_role_debug
 
 - name: generate tuned-main.conf file
-  ansible.builtin.template: src=tuned-main.conf.j2 dest=/etc/tuned/tuned-main.conf owner=root group=root mode=0644
+  ansible.builtin.template:
+    src: tuned-main.conf.j2
+    dest: /etc/tuned/tuned-main.conf
+    owner: root
+    group: root
+    mode: 0644
   notify: tuned restart
 
 - name: get tuned recommended profile
