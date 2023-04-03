@@ -1,4 +1,6 @@
 ---
 - name: tuned restart
-  ansible.builtin.service: name=tuned state=restarted
+  ansible.builtin.service:
+    name: tuned
+    state: restarted
   when: not tuned_role_debug
