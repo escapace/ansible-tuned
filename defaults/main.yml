@@ -1,5 +1,5 @@
 ---
-tuned_profile: recommended
+tuned_profile: "{{ (provider == 'ec2') | ternary('aws', 'recommended') }}"
 tuned_daemon: true
 tuned_dynamic_tuning: true
 tuned_sleep_interval: 1
