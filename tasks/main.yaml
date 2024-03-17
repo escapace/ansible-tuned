@@ -22,7 +22,7 @@
     dest: /etc/tuned/tuned-main.conf
     owner: root
     group: root
-    mode: 0644
+    mode: "0644"
   notify: tuned restart
 
 - name: get tuned recommended profile
