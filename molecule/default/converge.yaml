@@ -4,4 +4,4 @@
   vars:
     tuned_role_debug: true
   roles:
-    - role: escapace.tuned
+    - role: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') | basename }}"
