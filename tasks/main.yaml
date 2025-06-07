@@ -1,4 +1,19 @@
 ---
+- name: validate tuned_profile is valid string
+  ansible.builtin.assert:
+    that:
+      - tuned_profile is string
+      - tuned_profile | length > 0
+    fail_msg: "tuned_profile must be a non-empty string"
+  when: tuned_profile is string
+
+- name: validate tuned_profile is valid list
+  ansible.builtin.assert:
+    that:
+      - tuned_profile | length > 0
+    fail_msg: "tuned_profile must be a non-empty list"
+  when: tuned_profile is iterable and (tuned_profile is not string and tuned_profile is not mapping)
+
 - name: install tuned
   ansible.builtin.package:
     name: tuned
@@ -28,16 +43,26 @@
 - name: get tuned recommended profile
   ansible.builtin.shell: tuned-adm recommend 2> /dev/null || echo -n " *fail"
   register: tuned_recommend
-  when: tuned_profile == 'recommended'
+  when: (tuned_profile is string and tuned_profile == 'recommended') or ('recommended' in tuned_profile)
   changed_when: false
 
 - name: save tuned recommended profile
   ansible.builtin.set_fact:
     tuned_recommended_profile: "{{ (tuned_recommend.stdout == ' *fail') | ternary('default', tuned_recommend.stdout) }}"
-  when: tuned_profile == 'recommended'
+  when: (tuned_profile is string and tuned_profile == 'recommended') or ('recommended' in tuned_profile)
   changed_when: false
 
+- name: normalize tuned profile for command
+  ansible.builtin.set_fact:
+    tuned_profile_string: "{{ (tuned_profile == 'recommended') | ternary(tuned_recommended_profile, tuned_profile) }}"
+  when: tuned_profile is string
+
+- name: normalize tuned profile for command
+  ansible.builtin.set_fact:
+    tuned_profile_string: "{{ tuned_profile | map('regex_replace', '^recommended$', tuned_recommended_profile) | unique | join(' ') }}"
+  when: tuned_profile is iterable and (tuned_profile is not string and tuned_profile is not mapping)
+
 - name: set tuned profile
-  ansible.builtin.command: tuned-adm profile {{ (tuned_profile == 'recommended') | ternary(tuned_recommended_profile, tuned_profile) }}
+  ansible.builtin.command: tuned-adm profile {{ tuned_profile_string }}
   changed_when: false
   when: not tuned_role_debug

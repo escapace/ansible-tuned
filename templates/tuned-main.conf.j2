@@ -1,8 +1,8 @@
 # {{ ansible_managed }}
 
-daemon = {{ tuned_daemon }}
-dynamic_tuning = {{ tuned_dynamic_tuning }}
+daemon = {{ tuned_daemon | ternary('1', '0') }}
+dynamic_tuning = {{ tuned_dynamic_tuning | ternary('1', '0') }}
 sleep_interval = {{ tuned_sleep_interval }}
 update_interval = {{ tuned_update_interval }}
-recommend_command = {{ tuned_enable_recommend }}
-reapply_sysctl = {{ tuned_reapply_sysctl }}
+recommend_command = {{ tuned_enable_recommend | ternary('1', '0') }}
+reapply_sysctl = {{ tuned_reapply_sysctl | ternary('1', '0') }}
