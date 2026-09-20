@@ -1,68 +1,106 @@
 ---
-- name: validate tuned_profile is valid string
+- name: validate tuned profile type
   ansible.builtin.assert:
     that:
-      - tuned_profile is string
-      - tuned_profile | length > 0
-    fail_msg: "tuned_profile must be a non-empty string"
-  when: tuned_profile is string
+      - tuned_profile is string or (tuned_profile is sequence and tuned_profile is not mapping)
+    fail_msg: tuned_profile must be a string or list of strings
 
-- name: validate tuned_profile is valid list
+- name: validate tuned profile is not empty
   ansible.builtin.assert:
     that:
       - tuned_profile | length > 0
-    fail_msg: "tuned_profile must be a non-empty list"
-  when: tuned_profile is iterable and (tuned_profile is not string and tuned_profile is not mapping)
+    fail_msg: tuned_profile must not be empty
+
+- name: validate tuned profile list entries
+  ansible.builtin.assert:
+    that:
+      - item is string
+      - item | length > 0
+    fail_msg: tuned_profile list entries must be non-empty strings
+  loop: "{{ [] if tuned_profile is string else tuned_profile }}"
+
+- name: normalize requested tuned profiles
+  ansible.builtin.set_fact:
+    tuned_requested_profiles: "{{ [tuned_profile] if tuned_profile is string else tuned_profile }}"
 
 - name: install tuned
   ansible.builtin.package:
     name: tuned
     state: present
+  notify:
+    - tuned restart tuned
 
 - name: install atomic profile
   ansible.builtin.package:
     name: tuned-profiles-atomic
     state: present
+  notify:
+    - tuned restart tuned
 
 - name: enable tuned
-  ansible.builtin.service:
-    name: tuned
-    state: started
+  ansible.builtin.systemd_service:
+    name: tuned.service
     enabled: true
-  when: not tuned_role_debug
 
-- name: generate tuned-main.conf file
+- name: configure tuned
   ansible.builtin.template:
     src: tuned-main.conf.j2
     dest: /etc/tuned/tuned-main.conf
     owner: root
     group: root
     mode: "0644"
-  notify: tuned restart
+  notify:
+    - tuned restart tuned
 
-- name: get tuned recommended profile
-  ansible.builtin.shell: tuned-adm recommend 2> /dev/null || echo -n " *fail"
+- name: get the recommended tuned profile
+  ansible.builtin.command:
+    argv:
+      - tuned-adm
+      - recommend
+  when: "'recommended' in tuned_requested_profiles"
   register: tuned_recommend
-  when: (tuned_profile is string and tuned_profile == 'recommended') or ('recommended' in tuned_profile)
   changed_when: false
 
-- name: save tuned recommended profile
+- name: validate the recommended tuned profile
+  ansible.builtin.assert:
+    that:
+      - tuned_recommend.stdout | trim | length > 0
+    fail_msg: tuned-adm did not return a recommended profile
+  when: "'recommended' in tuned_requested_profiles"
+
+- name: resolve requested tuned profiles
   ansible.builtin.set_fact:
-    tuned_recommended_profile: "{{ (tuned_recommend.stdout == ' *fail') | ternary('default', tuned_recommend.stdout) }}"
-  when: (tuned_profile is string and tuned_profile == 'recommended') or ('recommended' in tuned_profile)
+    tuned_profile_names: >-
+      {{ tuned_requested_profiles
+         | map('regex_replace', '^recommended$', tuned_recommend.stdout | default('recommended') | trim)
+         | unique
+         | list }}
+
+- name: validate requested tuned profiles exist
+  ansible.builtin.command:
+    argv:
+      - tuned-adm
+      - profile_info
+      - "{{ item }}"
+  loop: "{{ tuned_profile_names }}"
   changed_when: false
 
-- name: normalize tuned profile for command
-  ansible.builtin.set_fact:
-    tuned_profile_string: "{{ (tuned_profile == 'recommended') | ternary(tuned_recommended_profile, tuned_profile) }}"
-  when: tuned_profile is string
+- name: select tuned profiles for the next service start
+  ansible.builtin.copy:
+    content: "{{ tuned_profile_names | join(' ') }}\n"
+    dest: /etc/tuned/active_profile
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - tuned restart tuned
 
-- name: normalize tuned profile for command
-  ansible.builtin.set_fact:
-    tuned_profile_string: "{{ tuned_profile | map('regex_replace', '^recommended$', tuned_recommended_profile) | unique | join(' ') }}"
-  when: tuned_profile is iterable and (tuned_profile is not string and tuned_profile is not mapping)
-
-- name: set tuned profile
-  ansible.builtin.command: tuned-adm profile {{ tuned_profile_string }}
-  changed_when: false
-  when: not tuned_role_debug
+- name: configure manual tuned profile selection
+  ansible.builtin.copy:
+    content: "manual\n"
+    dest: /etc/tuned/profile_mode
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - tuned restart tuned
