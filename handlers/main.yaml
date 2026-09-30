@@ -7,8 +7,10 @@
   ansible.builtin.systemd_service:
     name: tuned.service
     state: restarted
-  when: >-
-    (ansible_facts.services | default({}))
-    .get("tuned.service", {})
-    .get("state") == "running"
+  when:
+    - not ansible_check_mode
+    - >-
+      (ansible_facts.services | default({}))
+      .get("tuned.service", {})
+      .get("state") == "running"
   listen: tuned restart tuned
