@@ -1,5 +1,10 @@
 ---
 - name: converge
   hosts: all
+  pre_tasks:
+    - name: install process inspection tooling for verification
+      ansible.builtin.package:
+        name: procps-ng
+        state: present
   roles:
     - role: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') | basename }}"
