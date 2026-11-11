@@ -11,9 +11,12 @@
       ansible.builtin.include_role:
         name: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') | basename }}"
   rescue:
+    # Loop assertions aggregate item failures instead of preserving fail_msg.
     - name: verify failure came from profile validation
       ansible.builtin.assert:
-        that: ansible_failed_result.msg is match('^tuned_profile ')
+        that:
+          - ansible_failed_task.action == 'ansible.builtin.assert'
+          - ansible_failed_task.name in ['validate tuned profile type', 'validate tuned profile is not empty', 'validate tuned profile list entries']
 
     - name: record rejected profile input
       ansible.builtin.set_fact:
