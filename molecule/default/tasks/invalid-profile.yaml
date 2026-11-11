@@ -1,0 +1,24 @@
+---
+- name: initialize invalid profile result
+  ansible.builtin.set_fact:
+    tuned_test_rejected_profile: false
+
+- name: apply invalid profile input
+  vars:
+    tuned_profile: "{{ tuned_test_invalid_profile }}"
+  block:
+    - name: invoke role validation
+      ansible.builtin.include_role:
+        name: "{{ lookup('env', 'MOLECULE_PROJECT_DIRECTORY') | basename }}"
+  rescue:
+    - name: verify failure came from profile validation
+      ansible.builtin.assert:
+        that: ansible_failed_result.msg is match('^tuned_profile ')
+
+    - name: record rejected profile input
+      ansible.builtin.set_fact:
+        tuned_test_rejected_profile: true
+
+- name: verify invalid profile input was rejected
+  ansible.builtin.assert:
+    that: tuned_test_rejected_profile

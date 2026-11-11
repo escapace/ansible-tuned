@@ -1,8 +1,8 @@
 ---
-tuned_profile: "{{ ((provider is defined) and (provider == 'ec2')) | ternary('aws', 'recommended') }}"
 tuned_daemon: true
 tuned_dynamic_tuning: true
 tuned_enable_recommend: true
+tuned_profile: "{{ ((provider is defined) and (provider == 'ec2')) | ternary('aws', 'recommended') }}"
 tuned_reapply_sysctl: true
 
 tuned_sleep_interval: 1

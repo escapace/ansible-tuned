@@ -1,9 +1,10 @@
 ---
 - name: tuned gather service facts before restart
-  ansible.builtin.service_facts:
   listen: tuned restart tuned
 
+  ansible.builtin.service_facts:
 - name: tuned restart active tuned
+  listen: tuned restart tuned
   ansible.builtin.systemd_service:
     name: tuned.service
     state: restarted
@@ -13,4 +14,3 @@
       (ansible_facts.services | default({}))
       .get("tuned.service", {})
       .get("state") == "running"
-  listen: tuned restart tuned

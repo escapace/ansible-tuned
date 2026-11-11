@@ -57,10 +57,10 @@
     argv:
       - tuned-adm
       - recommend
-  when: "'recommended' in tuned_requested_profiles"
   register: tuned_recommend
   changed_when: false
 
+  when: "'recommended' in tuned_requested_profiles"
 - name: validate the recommended tuned profile
   ansible.builtin.assert:
     that:
@@ -82,9 +82,9 @@
       - tuned-adm
       - profile_info
       - "{{ item }}"
-  loop: "{{ tuned_profile_names }}"
   changed_when: false
 
+  loop: "{{ tuned_profile_names }}"
 - name: select tuned profiles for the next service start
   ansible.builtin.copy:
     content: "{{ tuned_profile_names | join(' ') }}\n"
